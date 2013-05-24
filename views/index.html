@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+
+  <body bgcolor="#000">
+    <canvas width="1000px" height="600px" style="background-color: white"/>
+
+    <script src="../support/jquery.js"></script>
+    <script src="../support/vector.js"></script>
+    <script src="../support/canvas-extensions.js"></script>
+    <script src="../models/ball.js"></script>
+    <script>
+      canvas  = document.getElementsByTagName("canvas")[0];
+      context = canvas.getContext("2d");
+
+      var resetCanvas = function(){
+        context.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      balls = [];
+      balls.push(new Ball(600, 500));
+      var infiniteLoop = function(){
+        resetCanvas();
+
+        balls.forEach(function(ball){
+          ball.update();
+          ball.checkBounds(canvas);
+          ball.draw(context);
+        });
+      }
+
+      $(canvas).on("mousedown", function(e){
+        balls.forEach(function(ball){
+          if( inCircle(ball.position.x, ball.position.y, ball.radius, e.offsetX, e.offsetY)){
+            touchedElement = ball;
+            touchedElement.status = "touched";
+          }
+          if(typeof touchedElement != "undefined") return
+        });
+
+        if(typeof touchedElement == "undefined") return
+
+        var oldPositionX = e.pageX;
+        var oldPositionY = e.pageY;
+        var startTime = (new Date).getTime();
+        var finishTime = startTime;
+        var speed = 0;
+        $(canvas).on("mousemove", function(e){
+          touchedElement.status = "moving";
+          touchedElement.move(touchedElement.position.x + (e.pageX - oldPositionX), touchedElement.position.y + (e.pageY - oldPositionY));
+
+          finishTime = (new Date).getTime();
+          speed = getSpeed(oldPositionX, oldPositionY, startTime, e.pageX, e.pageY, finishTime);
+
+          touchedElement.velocity = new Vector(speed.x, speed.y);
+
+          oldPositionX = e.pageX;
+          oldPositionY = e.pageY;
+          if((finishTime - startTime) > 500){
+            console.log(speed.x);
+            startTime = (new Date).getTime();
+          }
+        });
+
+      });
+
+      $(canvas).on("mouseup", function(e){
+        $(canvas).off("mousemove");
+        if(typeof touchedElement != "undefined"){
+          touchedElement.status = "normal";
+          touchedElement = undefined;
+        }
+      });
+
+      var inCircle = function(center_x, center_y, radius, x, y){
+        var dist = Math.sqrt(Math.pow((center_x - x), 2) + Math.pow((center_y - y), 2));
+        return dist <= radius;
+      }
+
+      var getSpeed = function(x0, y0, t0, x1, y1, t1){
+        return { x: ((x1 - x0) / (t1 - t0)) * 1000, y: ((y1 - y0) / (t1 - t0)) * 1000 }
+      }
+
+      // Calls the infiniteLoop function 60 times per second
+      setInterval(infiniteLoop, 1000 / 20);
+      //infiniteLoop();
+    </script>
+  </body>
+</html>
